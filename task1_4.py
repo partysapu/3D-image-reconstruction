@@ -34,7 +34,7 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1,32, 5)
         #self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(3686, 128)
+        self.fc1 = nn.Linear(32*12*12, 128)
         self.fc2 = nn.Linear(128, 10)
         #self.fc3 = nn.Linear(84, 10)
 
