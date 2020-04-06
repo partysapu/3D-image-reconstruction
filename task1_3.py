@@ -20,13 +20,14 @@ mnist_train_set = torchvision.datasets.MNIST('./data', train=True, download=True
 mnist_test_set = torchvision.datasets.MNIST('./data', train=False, download=True, transform=transform)
 
 train_loader = torch.utils.data.DataLoader(mnist_train_set ,
-                                          batch_size=100,
+                                          batch_size=5,
                                           shuffle=True
                                          )
 test_loader = torch.utils.data.DataLoader(mnist_test_set ,
-                                          batch_size=100,
+                                          batch_size=5,
                                           shuffle=True
                                          )
+# print(len(test_loader))
 
 class Net(nn.Module):
 
@@ -60,7 +61,7 @@ model = Net()
 print(model)
 
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
-n_epochs = 5000
+n_epochs = 5
 
 for epoch in range(n_epochs):
     ##################
@@ -70,12 +71,13 @@ for epoch in range(n_epochs):
     model.train()
     train_loss = 0
     for train_data, train_target in train_loader:
+        train_data, train_target = train_data, train_target
         #print(train_data.type(),train_target.type())
         train_target_onehot = torch.zeros(train_target.shape[0], 10)
         train_target_onehot.scatter_(1, train_target.unsqueeze(1), 1.0)
         optimizer.zero_grad()
         output = model(train_data)
-        criterion = nn.MSELoss()
+        criterion = nn.BCELoss()
         loss = criterion(output, train_target_onehot)
         loss.backward()
         optimizer.step()
@@ -90,6 +92,7 @@ for epoch in range(n_epochs):
     # turn off gradients for validation
     with torch.no_grad():
         for test_data, test_target in test_loader:
+            test_data, test_target = test_data, test_target
             test_target_onehot = torch.zeros(test_target.shape[0], 10)
             test_target_onehot.scatter_(1, test_target.unsqueeze(1), 1.0)
             output = model(test_data)
@@ -99,11 +102,13 @@ for epoch in range(n_epochs):
     #########################
     ## PRINT EPOCH RESULTS ##
     #########################
-    train_loss /= len(train_loader)
-    valid_loss /= len(test_loader)
+    train_loss /= len(train_loader.dataset)
+    valid_loss /= len(test_loader.dataset)
     if epoch <= 3 or epoch % 10 == 0:
         print(f'Epoch: {epoch+1}/{n_epochs}.. Training loss: {train_loss}.. Validation Loss: {valid_loss}')
-
+        # for name, param in model.named_parameters():
+        #     if param.requires_grad:
+        #         print(name, param.data)
 #################
 ### TEST LOOP ###
 #################
@@ -116,6 +121,7 @@ correct = 0
 # turn off gradients for validation
 with torch.no_grad():
     for test_data, test_target in test_loader:
+        test_data, test_target = test_data, test_target
         #print(test_data.shape)
         test_target_onehot = torch.zeros(test_target.shape[0], 10)
         test_target_onehot.scatter_(1, test_target.unsqueeze(1), 1.0)
@@ -126,12 +132,12 @@ with torch.no_grad():
         # accumulate the valid_loss
         test_loss += loss.item()
         # calculate the accuracy
-        #predicted = torch.argmax(output, 1)
-        correct += (output == test_target_onehot).sum().item()
+        predicted = output.max(dim=1).indices
+        correct += (test_target == predicted).sum().item()
 
 ########################
 ## TEST RESULTS ##
 ########################
-test_loss /= len(test_loader)
-accuracy = correct / len(test_loader)
+test_loss /= len(test_loader.dataset)
+accuracy = correct / len(test_loader.dataset)
 print(f'Test loss: {test_loss}.. Test Accuracy(%): {accuracy}')     
