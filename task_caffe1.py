@@ -16,68 +16,68 @@ transform = transforms.Compose([
 # use_cuda = torch.cuda.is_available()
 # device = torch.device("cuda:0" if use_cuda else "cpu")
 # print(device)
-cifar_train_set = torchvision.datasets.CIFAR10('./data2', train=True, download=True,transform=transform)
-cifar_test_set = torchvision.datasets.CIFAR10('./data2', train=False, download=True, transform=transform)
+mnist_train_set = torchvision.datasets.MNIST('./data', train=True, download=True,transform=transform)
+mnist_test_set = torchvision.datasets.MNIST('./data', train=False, download=True, transform=transform)
 
-train_loader = torch.utils.data.DataLoader(cifar_train_set ,
-                                          batch_size=32,
+train_loader = torch.utils.data.DataLoader(mnist_train_set ,
+                                          batch_size=64,
                                           shuffle=True
                                          )
-test_loader = torch.utils.data.DataLoader(cifar_test_set ,
-                                          batch_size=32,
+test_loader = torch.utils.data.DataLoader(mnist_test_set ,
+                                          batch_size=64,
                                           shuffle=True
                                          )
-# print(len(train_loader.dataset))
-# print(len(test_loader.dataset))
-# print(len(test_loader))
+# print(len(test_loader),len(test_loader.dataset)/5)
+
 
 class Net(nn.Module):
 
-	def __init__(self):
-		super(Net, self).__init__()
-		self.conv1 = nn.Conv2d(3, 32, 3)
-		self.conv2 = nn.Conv2d(32, 32, 3)
-		self.fc1 = nn.Linear(14*14*32, 512)
-		self.fc2 = nn.Linear(512, 10)
-		self.dp1 = nn.Dropout(0.2)
-		self.dp2 = nn.Dropout(0.5)
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(1, 20, 5)
+        self.conv2 = nn.Conv2d(20, 50, 5)
+        self.fc1 = nn.Linear(800, 500)
+        nn.init.xavier_uniform(self.fc1.weight)
+        self.fc2 = nn.Linear(500, 10)
+        nn.init.xavier_uniform(self.fc2.weight)
+        #self.fc3 = nn.Linear(84, 10)
 
-	def forward(self, x):
-		# x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-		x = F.relu(self.conv1(x))
-		# x = F.embedding(x, weight= self.weight1(x), max_norm=3)
-		# clipping_value = 1 # arbitrary value of your choosing
-		nn.utils.clip_grad_norm(model.parameters(), 3)
-		x = self.dp1(x)
-		x = self.conv2(x)
-		# x = F.embedding(x, weight = self.weight1(x), max_norm=3)
-		nn.utils.clip_grad_norm(model.parameters(), 3)
-		x = F.max_pool2d(F.relu(x), 2)
-		x = x.view(-1, self.num_flat_features(x))
-		x = F.relu(self.fc1(x))
-		x = self.dp2(x)
-		x = F.softmax(self.fc2(x),dim=0)
-		return x
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = x.view(-1, self.num_flat_features(x))
+        
+        # self.weights_init()
+        x = F.relu(self.fc1(x))
+        
+        # self.weights_init()
+        x = F.softmax(self.fc2(x),dim=0)
+        #print(x.shape)
+        #x = self.fc3(x)
+        return x
 
-	# def weight1(self, x):
-	# 	# print(1)
-	# 	name, param = model.named_parameters(x)
-	# 	print(param.data.shape)
-	# 	return param.data
+    def num_flat_features(self, x):
+        size = x.size()[1:]
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+        
+    def weights_init(m):
+        if isinstance(m, nn.Conv2d):
+            torch.nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                torch.nn.init.zeros_(m.bias)
 
-	def num_flat_features(self, x):
-		size = x.size()[1:]
-		num_features = 1
-		for s in size:
-			num_features *= s
-		return num_features
+    
+
 
 
 model = Net()
-# print(model.weight1)
+print(model)
 
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
-n_epochs = 10
+n_epochs = 5
 
 for epoch in range(n_epochs):
     ##################
@@ -87,8 +87,8 @@ for epoch in range(n_epochs):
     model.train()
     train_loss = 0
     for train_data, train_target in train_loader:
-        # train_data, train_target = train_data, train_target
-        # print(train_data.shape,train_target.shape)
+        train_data, train_target = train_data, train_target
+        #print(train_data.type(),train_target.type())
         train_target_onehot = torch.zeros(train_target.shape[0], 10)
         train_target_onehot.scatter_(1, train_target.unsqueeze(1), 1.0)
         optimizer.zero_grad()
@@ -120,7 +120,7 @@ for epoch in range(n_epochs):
     #########################
     train_loss /= len(train_loader)
     valid_loss /= len(test_loader)
-    if epoch <= 3 or epoch % 10 == 0:
+    if epoch <= 3 or epoch % 1 == 0:
         print(f'Epoch: {epoch+1}/{n_epochs}.. Training loss: {train_loss}.. Validation Loss: {valid_loss}')
         # for name, param in model.named_parameters():
         #     if param.requires_grad:
