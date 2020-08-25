@@ -1,0 +1,10 @@
+Cython
+backports.functools_lru_cache
+keras>=2
+tensorflow
+numpy
+scikit-learn
+matplotlib
+imageio
+oauth2client
+google-api-python-client

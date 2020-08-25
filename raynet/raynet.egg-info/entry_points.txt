@@ -1,0 +1,7 @@
+[console_scripts]
+raynet_compute_metrics = raynet.scripts.compute_metrics:main
+raynet_forward = raynet.scripts.forward_pass:main
+raynet_pretrain = raynet.scripts.pretrain_network:main
+raynet_to_pcl = raynet.scripts.convert_to_pointcloud:main
+raynet_train = raynet.scripts.train_raynet:main
+
